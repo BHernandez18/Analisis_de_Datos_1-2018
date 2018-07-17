@@ -25,7 +25,7 @@ library(arulesViz)
 # ========== Lectura de datos ============
 #
 # Lectura del conjunto de datos a analizar.
-conjunto_datos <- read.table(file = "C://Users//Familia Hernandez//Desktop//An�lisis de Datos//zoo//zoo.data",
+conjunto_datos <- read.table(file = "/home/benjamin/Escritorio/Análisis de Datos/zoo/zoo.data",
                              sep = ",",
                              header = FALSE)
 
@@ -135,15 +135,42 @@ dev.off()
 #
 # ========== Obtencion de reglas =========
 #
-rules <- apriori(transacciones,
-                 parameter = list(support = 0.05, confidence = 0.9),
-                 appearance = list(rhs = c("type=mamifero",
-                                           "type=ave",
-                                           "type=reptil",
-                                           "type=pez",
-                                           "type=anfibio",
-                                           "type=insecto",
-                                           "type=otro"))
+# Para la obtencion de reglas de asociacion, se emplea el algoritmo 'a priori' para encontrar un conjunto
+# de items mas frecuentes sobre nuestra 'base de datos transaccional'. Asi mismo, se define un soporte minimo
+# del 5% y una confianza minima del 90%, dado que el conjunto de datos a estudiar es muy pequeño. Tambien se
+# ajusta la busqueda de reglas de modo que el consecuente de las mismas (RHS -> Right-Hand Side) sea alguno de
+# los tipos de animales que se estudian del conjunto de datos.
+reglas <- apriori(transacciones,
+                  parameter = list(support = 0.05, confidence = 0.9),
+                  appearance = list(rhs = c("type=mamifero",
+                                            "type=ave",
+                                            "type=reptil",
+                                            "type=pez",
+                                            "type=anfibio",
+                                            "type=insecto",
+                                            "type=otro"))
                  )
 
-rules <- sort(rules, by = "lift")
+# Se guardan las reglas obtenidas en un archivo '.csv
+write(reglas,
+      file = "reglas_de_asociacion.csv",
+      sep = ",",
+      quote = TRUE,
+      row.names = FALSE)
+
+# Una vez obtenidas las reglas, se ordenan por "soporte", "confianza" y "lift". Esta ultima metrica permite
+# obtener el grado de dependencia entre los distintos items que componen cada una de las reglas, mientras mayor
+# sea el valor del parametro, mas dependientes seran los items.
+reglas_por_soporte <- sort(reglas, by = "support")
+reglas_por_confianza <- sort(reglas, by = "confidence")
+reglas_por_lift <- sort(reglas, by = "lift")
+
+# Se muestran por consola las 10 primeras reglas obtenidas previamente ordenadas segun su respectivo parametro.
+cat("\n== REGLAS ORDENADAS POR SOPORTE (DESCENDENTE) ==\n")
+inspect(head(reglas_por_soporte, 10))
+
+cat("\n== REGLAS ORDENADAS POR CONFIANZA (DESCENDENTE) ==\n")
+inspect(head(reglas_por_confianza, 10))
+
+cat("\n== REGLAS ORDENADAS POR LIFT' (DESCENDENTE) ==\n")
+inspect(head(reglas_por_lift, 10))
