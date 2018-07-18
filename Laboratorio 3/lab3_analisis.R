@@ -151,7 +151,7 @@ reglas <- apriori(transacciones,
                                             "type=otro"))
                  )
 
-# Se guardan las reglas obtenidas en un archivo '.csv
+# Se guardan las reglas obtenidas en un archivo '.csv'
 write(reglas,
       file = "reglas_de_asociacion.csv",
       sep = ",",
@@ -174,3 +174,25 @@ inspect(head(reglas_por_confianza, 10))
 
 cat("\n== REGLAS ORDENADAS POR LIFT' (DESCENDENTE) ==\n")
 inspect(head(reglas_por_lift, 10))
+
+#
+# ====== Visualizacion de reglas =========
+#
+# Para visualizar diversos datos interesantes de las reglas, se empleara la biblioteca 'arulesViz'.
+# Primero se visualizaran las reglas obtenidas previamente a traves de una 'matriz agrupada', en donde
+# sera posible identificar los antecedentes y consecuentes de algunas reglas. El tamano indicara el
+# soporte de las reglas y el color la metrica 'lift' (dependencia entre los items).
+
+matriz_agrupada_reglas <- plot(reglas, method = "grouped")
+
+dev.copy(png, "plot_matriz_agrupada_reglas.png")
+dev.off()
+
+# Luego, es posible establecer una especie de "Clustering" a partir de las reglas obtenidas previamente.
+# Sin embargo, el metodo empleado no soporta mas de 100 reglas, por lo que tampoco es categorico establecer
+# conclusiones concretas al respecto.
+
+agrupamiento_reglas <- plot(head(reglas, 100), method = "graph")
+
+dev.copy(png, "plot_agrupamiento_reglas.png")
+dev.off()
