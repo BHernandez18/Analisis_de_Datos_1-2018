@@ -12,19 +12,21 @@
 #
 # ======= Descarga de bibliotecas =======
 #
-# El presente archivo, utiliza las bibliotecas 'arules' y 'arulesViz' para realizar algunos estudios respecto
+# El presente archivo, utiliza las bibliotecas 'e1071', 'dplyr' y 'caret' para realizar algunos estudios respecto
 # a los datos que se emplean. Si no posee las bibliotecas, descomente la siguiente linea para instalarlos.
 
-#install.packages(c("e1071"), dependencies = TRUE)
+#install.packages(c("e1071", "dplyr", "tidyverse"), dependencies = TRUE)
 
-# Carga de las bibliotecas "arules" y "arulesViz".
+# Carga de las bibliotecas 'e1071', 'dplyr' y 'caret'.
 library(e1071)
+library(dplyr)
+library(caret)
 
 #
 # ========== Lectura de datos ============
 #
 # Lectura del conjunto de datos a analizar.
-conjunto_datos <- read.table(file = "/home/benjamin/Escritorio/AnÃ¡lisis de Datos/zoo/zoo.data",
+conjunto_datos <- read.table(file = "C:/Users/Familia Hernandez/Desktop/Analisis_de_Datos_1-2018/zoo/zoo.data",
                              sep = ",",
                              header = FALSE)
 
@@ -61,9 +63,8 @@ colnames(conjunto_datos) <- nombres_atributos
 
 # Por ejemplo, el atributo 'animal_name' solo registra los nombres de los animales presentes en la muestra
 # y por lo tanto, es un dato no-numerico. Dada la naturaleza del atributo, resulta util eliminarlo del
-# proceso.
-
-conjunto_datos <- conjunto_datos[, -c(1)] # Se elimina el atributo 'animal_name'
+# proceso, aunque este se realizara posterior a la obtencion de los conjuntos de entrenamiento y prueba para
+# el clasificador.
 
 # En cuanto a las observaciones, se sabe que existen dos instancias de 'frog' y una de 'girl'. La unica
 # diferencia que se da en las instancias de 'frog' esta definida por el atributo 'venomous' (venenoso), en
@@ -72,7 +73,14 @@ conjunto_datos <- conjunto_datos[, -c(1)] # Se elimina el atributo 'animal_name'
 # debido a que el mismo conjunto fue destinado y confeccionado para detallar aspectos de los distintos
 # ANIMALES pertenecientes a un zoologico.
 
-conjunto_datos <- conjunto_datos[-c(27, 30),] # Se elimina una observacion 'frog' y 'girl'
+conjunto_datos_filtrado <- conjunto_datos[-c(27, 30),] # Se elimina una observacion 'frog' y 'girl'
+
+# Luego, para aquellos atributos que estan definidos como binarios {0,1}, solo basta con identificar y reemplazar
+# aquellos valores definidos como 1 por TRUE, y los definidos como 0 por FALSE.
+
+for(i in nombres_atributos[-c(1, 14, 18)]) {
+  conjunto_datos_filtrado[, i] <- as.logical(conjunto_datos_filtrado[, i])
+}
 
 # Siguiendo con el atributo 'type', en este se convertira cada una de las representaciones numericas a sus
 # respectivos nombres con los cuales se caracterizaron, para luego definirlos como factores.
@@ -84,16 +92,62 @@ tipos_animales <- c("mamifero",
                     "insecto",
                     "otro")
 
-conjunto_datos$type <- factor(conjunto_datos$type)
-levels(conjunto_datos$type) <- factor(tipos_animales)
+conjunto_datos_filtrado$type <- factor(conjunto_datos_filtrado$type)
+levels(conjunto_datos_filtrado$type) <- factor(tipos_animales)
+
+# En cuanto al atributo 'legs', se convertira en factores cada numero de patas definido en el conjunto de datos.
+conjunto_datos_filtrado$legs <- factor(conjunto_datos_filtrado$legs)
 
 #
 # ============ Procesamiento =============
 #
-conjunto_datos_filtrado <- conjunto_datos[,-c(17)]
 
-modelo_bayesiano <- naiveBayes(type ~ ., conjunto_datos)
-prediccion <- predict(modelo_bayesiano, conjunto_datos)
+# Se configura una 'seed' para obtener siempre las mismas muestras en los conjuntos.
+set.seed(1337)
 
-tabla_contingencia <- table(prediccion, conjunto_datos$type)
-print(tabla_contingencia)
+# Para empezar a diseñar un Clasificador Bayesiano Ingenuo, se separá el conjunto de datos en otros 2 conjuntos: uno de
+# de entrenamiento ('training') y otro de prueba ('test'). El conjunto de entrenamiento contendra un 70% de las
+# observaciones originales y por lo tanto, el conjunto de prueba tendrá el 30% restante. Para asegurar que el conjunto
+# de entrenamiento contiene al menos una observacion de cada tipo de animal presente en el conjunto de datos, se obtendra
+# una muestra que contenga el 70% de cada tipo de animal.
+# 
+
+# Se obtiene el conjunto de entrenamiento.
+conjunto_datos_entrenamiento <- conjunto_datos_filtrado %>% group_by(type) %>% sample_frac(0.7)
+
+# Se crea un vector que contiene todas las filas que no deberan considerarse dentro del conjunto de entramiento.
+remover <- rownames(conjunto_datos_entrenamiento)
+
+# Se obtiene el conjunto de prueba.
+conjunto_datos_prueba <- anti_join(conjunto_datos_filtrado, conjunto_datos_entrenamiento, by = 'animal_name')
+
+# Se elimina el atributo 'animal_name' para ambos conjuntos obtenidos previamente, por los motivos explicados en la
+# fase de pre-procesamiento.
+conjunto_datos_entrenamiento <- conjunto_datos_entrenamiento[, -c(1)]
+conjunto_datos_prueba <- conjunto_datos_prueba[, -c(1)]
+
+#
+# =========== Obtencion del Clasificador =========
+#
+# A continuacion, se obtendra el Clasificador Bayesiano Ingenuo a partir del conjunto de datos de entrenamiento, empleando
+# la funcion 'naiveBayes()' de la biblioteca 'e1071'.
+modelo_bayesiano <- naiveBayes(type ~ ., conjunto_datos_entrenamiento)
+
+# Se pone a prueba el modelo obtenido con el conjunto de datos de prueba.
+prediccion <- predict(modelo_bayesiano, conjunto_datos_prueba)
+
+#
+# ========= Resultados ==========
+#
+# Se obtiene una matriz de confusion respecto a los resultados obtenidos con el clasificador conseguido, para poder
+# evaluar la precision del clasificador.
+matriz_confusion <- table(conjunto_datos_prueba$type, prediccion)
+
+# Se guarda la tabla obtenida en un archivo '.csv'
+write.csv(matriz_confusion,
+          file = "matriz_confusion.csv",
+          row.names = TRUE)
+
+cat("=== Matriz de Confusion ===\n\n")
+resultados <- confusionMatrix(matriz_confusion)
+print(resultados)

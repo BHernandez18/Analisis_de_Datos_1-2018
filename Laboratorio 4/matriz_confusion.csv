@@ -1,0 +1,8 @@
+"","mamifero","ave","reptil","pez","anfibio","insecto","otro"
+"mamifero",12,0,0,0,0,0,0
+"ave",0,6,0,0,0,0,0
+"reptil",0,0,0,1,0,0,0
+"pez",0,0,0,4,0,0,0
+"anfibio",0,0,0,0,1,0,0
+"insecto",0,0,0,0,0,2,0
+"otro",0,0,1,0,0,0,2
