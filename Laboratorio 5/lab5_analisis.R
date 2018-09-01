@@ -21,11 +21,13 @@
 library(C50)
 library(tidyverse)
 
+set.seed(10)
+
 #
 # ========== Lectura de datos ============
 #
 # Lectura del conjunto de datos a analizar.
-conjunto_datos <- read.table(file = "/home/benjamin/Escritorio/Análisis de Datos/zoo/zoo.data",
+conjunto_datos <- read.table(file = "C:/Users/Familia Hernandez/Desktop/Analisis_de_Datos_1-2018/zoo/zoo.data",
                              sep = ",",
                              header = FALSE)
 
@@ -57,13 +59,13 @@ colnames(conjunto_datos) <- nombres_atributos
 #
 # ========= Pre - Procesamiento ==========
 #
-# Antes de extraer conocimiento por medio de un Clasificador Bayesiano Ingenuo, es necesario preparar los datos
+# Antes de extraer conocimiento por medio de un Arbol de decision, es necesario preparar los datos
 # que se poseen para el conjunto de datos 'Zoo'.
 
 # Por ejemplo, el atributo 'animal_name' solo registra los nombres de los animales presentes en la muestra
 # y por lo tanto, es un dato no-numerico. Dada la naturaleza del atributo, resulta util eliminarlo del
 # proceso, aunque este se realizara posterior a la obtencion de los conjuntos de entrenamiento y prueba para
-# el clasificador.
+# el arbol de decision.
 
 # En cuanto a las observaciones, se sabe que existen dos instancias de 'frog' y una de 'girl'. La unica
 # diferencia que se da en las instancias de 'frog' esta definida por el atributo 'venomous' (venenoso), en
@@ -106,6 +108,8 @@ reglas_modelo <- C50::C5.0(x = conjunto_datos_entrenamiento[, -17],
 
 # Resumen del modelo resultante
 resumen_reglas <- summary(reglas_modelo)
+cat("\n== Reglas del Arbol de Decision ==\n")
+show(resumen_reglas)
 
 
 # Arbol de decision
@@ -114,6 +118,12 @@ arbol_modelo <- C50::C5.0(x = conjunto_datos_entrenamiento[, -17],
 
 # Resumen del modelo resultante
 resumen_arbol <- summary(arbol_modelo)
+cat("\n\n== Resumen general del Arbol de Decision ==\n")
+show(resumen_arbol)
 
 # Plot del arbol de decision resultante.
 plot(arbol_modelo)
+
+# Se evalua el arbol de decision obtenido, con el conjunto de prueba conseguido previamente.
+prediccion <- predict(arbol_modelo, conjunto_datos_prueba, type = "class")
+matriz_confusion <- table(conjunto_datos_prueba$type, prediccion)
