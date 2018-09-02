@@ -17,7 +17,7 @@
 
 #install.packages(c("C50", "tidyverse", "caret"), dependencies = TRUE)
 
-# Carga de las bibliotecas 'C50' y 'tidyverse'.
+# Carga de las bibliotecas 'C50', 'tidyverse' y 'caret'.
 library(C50)
 library(tidyverse)
 library(caret)
