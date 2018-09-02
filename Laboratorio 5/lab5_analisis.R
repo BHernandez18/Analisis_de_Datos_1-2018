@@ -130,6 +130,8 @@ show(resumen_arbol)
 
 # Plot del arbol de decision resultante.
 plot(arbol_modelo)
+dev.copy(png, "plot_arbol-de-decision.png", width = 1200, height = 900)
+dev.off()
 
 
 #
