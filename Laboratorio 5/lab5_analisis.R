@@ -12,14 +12,15 @@
 #
 # ======= Descarga de bibliotecas =======
 #
-# El presente archivo, utiliza las bibliotecas 'C50' y 'tidyverse' para realizar algunos estudios respecto
+# El presente archivo, utiliza las bibliotecas 'C50', 'tidyverse' y 'caret' para realizar algunos estudios respecto
 # a los datos que se emplean. Si no posee las bibliotecas, descomente la siguiente linea para instalarlos.
 
-#install.packages(c("C50", "tidyverse"), dependencies = TRUE)
+#install.packages(c("C50", "tidyverse", "caret"), dependencies = TRUE)
 
 # Carga de las bibliotecas 'C50' y 'tidyverse'.
 library(C50)
 library(tidyverse)
+library(caret)
 
 set.seed(10)
 
@@ -108,7 +109,10 @@ reglas_modelo <- C50::C5.0(x = conjunto_datos_entrenamiento[, -17],
 
 # Resumen del modelo resultante
 resumen_reglas <- summary(reglas_modelo)
-cat("\n== Reglas del Arbol de Decision ==\n")
+cat("\n\n")
+cat("==================================\n")
+cat("== Reglas del Arbol de Decision ==\n")
+cat("==================================\n")
 show(resumen_reglas)
 
 
@@ -118,12 +122,31 @@ arbol_modelo <- C50::C5.0(x = conjunto_datos_entrenamiento[, -17],
 
 # Resumen del modelo resultante
 resumen_arbol <- summary(arbol_modelo)
-cat("\n\n== Resumen general del Arbol de Decision ==\n")
+cat("\n\n")
+cat("===========================================\n")
+cat("== Resumen general del Arbol de Decision ==\n")
+cat("===========================================\n")
 show(resumen_arbol)
 
 # Plot del arbol de decision resultante.
 plot(arbol_modelo)
 
+
+#
+# ==== Analisis Extras ====
+#
 # Se evalua el arbol de decision obtenido, con el conjunto de prueba conseguido previamente.
 prediccion <- predict(arbol_modelo, conjunto_datos_prueba, type = "class")
 matriz_confusion <- table(conjunto_datos_prueba$type, prediccion)
+
+# Se guarda la tabla obtenida en un archivo '.csv'
+write.csv(matriz_confusion,
+          file = "matriz_confusion.csv",
+          row.names = TRUE)
+
+cat("\n\n")
+cat("=========================\n")
+cat("== Matriz de Confusion ==\n")
+cat("=========================\n")
+resultados <- confusionMatrix(matriz_confusion)
+print(resultados)
