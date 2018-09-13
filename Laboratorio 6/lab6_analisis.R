@@ -118,8 +118,13 @@ correlaciones_cruzadas <- list()
 titulos <- paste("CCF entre PAM y VFSC del sujeto", nombres_sujetos, "en", nombres_estados)
 for (i in 1:length(nombres_variables)) {
   datos_tmp <- get(nombres_variables[i])
-  correlaciones_cruzadas[[i]] <- ccf(x = datos_tmp[,"PAM"], y = datos_tmp[,"VFSC"], plot = FALSE)
+  correlaciones_cruzadas[[i]] <- ccf(x = datos_tmp[,"PAM"],
+                                     y = datos_tmp[,"VFSC"],
+                                     plot = FALSE,
+                                     lag.max = length(datos_tmp[[1]]))
   png(filename = paste0("plot_ccf_", lowercase_nombres_estados[i], "_", lowercase_nombres_sujetos[i], ".png"),
+      width = 813,
+      height = 457,
       res = 80)
   plot(correlaciones_cruzadas[[i]], main = titulos[i], ylab = "CCF")
   dev.off()
@@ -132,22 +137,43 @@ autocorrelaciones <- list()
 titulos <- paste("ACF de PAM del sujeto", nombres_sujetos, "en", nombres_estados)
 for (i in 1:length(nombres_variables)) {
   datos_tmp <- get(nombres_variables[i])
-  autocorrelaciones[[i]] <- acf(x = datos_tmp[,"PAM"], plot = FALSE)
+  autocorrelaciones[[i]] <- acf(x = datos_tmp[,"PAM"],
+                                plot = FALSE,
+                                lag.max = length(datos_tmp[[1]]))
   png(filename = paste0("plot_acf_", lowercase_nombres_estados[i], "_", lowercase_nombres_sujetos[i], ".png"),
+      width = 813,
+      height = 457,
       res = 80)
   plot(autocorrelaciones[[i]], main = titulos[i])
   dev.off()
 }
 
 #
-# >> Obtencion de las funciones de transferencia <<
+# >> Obtencion de las funciones de transferencia en el dominio de la Frecuencia <<
 #
 funciones_transferencia <- list()
 for (i in 1:length(nombres_variables)) {
   datos_tmp <- get(nombres_variables[i])
   fft_entrada <- fft(datos_tmp[, "PAM"])
   fft_salida <- fft(datos_tmp[, "VFSC"])
-  funciones_transferencia[[i]] <- fft_salida / fft_entrada
+  funciones_transferencia[[i]] <- ifft(fft_salida / fft_entrada)
+}
+
+#
+# >> Graficas de la funciones de transferencia en el dominio de la Frecuencia <<
+#
+titulos <- paste("PWelch Funcion de Transferencia -", nombres_sujetos, nombres_estados)
+for (i in 1:length(funciones_transferencia)) {
+  tmp <- funciones_transferencia[[i]]
+  png(filename = paste0("plot_pwelch_", lowercase_nombres_estados[i], "_", lowercase_nombres_sujetos[i], ".png"),
+      width = 813,
+      height = 457,
+      res = 80)
+  aux <- pwelch(ts(tmp, frequency = 5), plot = T,
+                main = titulos[i],
+                xlab = "Frecuencia[Hz]",
+                ylab = "Espectro")
+  dev.off()
 }
 
 #
@@ -169,6 +195,25 @@ funciones_escalon_inverso <- list()
 for (i in 1:length(funciones_escalon)) {
   funcion_escalon <- funciones_escalon[[i]]
   valores_escalon_inverso <- sapply(1:largo_vectores[i], function(i) 1-funcion_escalon(i))
-  funcion_escalon_inverso <- stepfun(2:largo_vectores[i], valores_escalon_inverso)
-  funciones_escalon_inverso[[i]] <- funcion_escalon_inverso
+  funciones_escalon_inverso[[i]] <- valores_escalon_inverso
+}
+
+#
+# >> Convoluciones entre los escalones inversos para PAM y las funciones de transferencia
+#
+convoluciones <- list()
+titulos <- paste("Convolucion entre PAM Inverso y F. Transf. de", nombres_estados, nombres_sujetos)
+for (i in 1:length(funciones_escalon_inverso)) {
+  entrada <- funciones_escalon_inverso[[i]]
+  h <- funciones_transferencia[[i]]
+  convoluciones[[i]] <- salida <- convolve(entrada, h)
+  png(filename = paste0("plot_convolucion_", lowercase_nombres_estados[i], "_", lowercase_nombres_sujetos[i], ".png"),
+      width = 813,
+      height = 457,
+      res = 80)
+  plot.ts(ts(salida, frequency = 5),
+          main = titulos[i],
+          xlab = "Tiempo",
+          ylab = "VFSC")
+  dev.off()
 }
